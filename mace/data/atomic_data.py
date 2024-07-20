@@ -42,6 +42,7 @@ class AtomicData(torch_geometric.data.Data):
     forces_weight: torch.Tensor
     stress_weight: torch.Tensor
     virials_weight: torch.Tensor
+    atomic_weights: torch.Tensor# ATOMIC WEIGHTS ARE ADDED HERE
 
     def __init__(
         self,
@@ -62,6 +63,7 @@ class AtomicData(torch_geometric.data.Data):
         virials: Optional[torch.Tensor],  # [1,3,3]
         dipole: Optional[torch.Tensor],  # [, 3]
         charges: Optional[torch.Tensor],  # [n_nodes, ]
+        atomic_weights: torch.Tensor, # [n_nodes, 3]# ATOMIC WEIGHTS ARE ADDED HERE
     ):
         # Check shapes
         num_nodes = node_attrs.shape[0]
@@ -83,6 +85,7 @@ class AtomicData(torch_geometric.data.Data):
         assert virials is None or virials.shape == (1, 3, 3)
         assert dipole is None or dipole.shape[-1] == 3
         assert charges is None or charges.shape == (num_nodes,)
+        assert atomic_weights is None or atomic_weights.shape == (num_nodes, 1)# ATOMIC WEIGHTS ARE ADDED HERE
         # Aggregate data
         data = {
             "num_nodes": num_nodes,
@@ -103,6 +106,7 @@ class AtomicData(torch_geometric.data.Data):
             "virials": virials,
             "dipole": dipole,
             "charges": charges,
+            "atomic_weights": atomic_weights# ATOMIC WEIGHTS ARE ADDED HERE
         }
         super().__init__(**data)
 
@@ -110,6 +114,7 @@ class AtomicData(torch_geometric.data.Data):
     def from_config(
         cls, config: Configuration, z_table: AtomicNumberTable, cutoff: float
     ) -> "AtomicData":
+        
         edge_index, shifts, unit_shifts = get_neighborhood(
             positions=config.positions, cutoff=cutoff, pbc=config.pbc, cell=config.cell
         )
@@ -156,17 +161,19 @@ class AtomicData(torch_geometric.data.Data):
             if config.virials_weight is not None
             else 1
         )
-
+        
         forces = (
             torch.tensor(config.forces, dtype=torch.get_default_dtype())
             if config.forces is not None
             else None
         )
+        
         energy = (
             torch.tensor(config.energy, dtype=torch.get_default_dtype())
             if config.energy is not None
             else None
         )
+        
         stress = (
             voigt_to_matrix(
                 torch.tensor(config.stress, dtype=torch.get_default_dtype())
@@ -174,6 +181,7 @@ class AtomicData(torch_geometric.data.Data):
             if config.stress is not None
             else None
         )
+        
         virials = (
             voigt_to_matrix(
                 torch.tensor(config.virials, dtype=torch.get_default_dtype())
@@ -181,16 +189,24 @@ class AtomicData(torch_geometric.data.Data):
             if config.virials is not None
             else None
         )
+
         dipole = (
             torch.tensor(config.dipole, dtype=torch.get_default_dtype()).unsqueeze(0)
             if config.dipole is not None
             else None
         )
+        
         charges = (
             torch.tensor(config.charges, dtype=torch.get_default_dtype())
             if config.charges is not None
             else None
         )
+        
+        atomic_weights = (
+            torch.tensor(config.atomic_weights, dtype=torch.get_default_dtype())
+            if config.atomic_weights is not None
+            else None
+        )# ATOMIC WEIGHTS ARE ADDED HERE
 
         return cls(
             edge_index=torch.tensor(edge_index, dtype=torch.long),
@@ -210,7 +226,9 @@ class AtomicData(torch_geometric.data.Data):
             virials=virials,
             dipole=dipole,
             charges=charges,
+            atomic_weights=atomic_weights# ATOMIC WEIGHTS ARE ADDED HERE
         )
+
 
 
 def get_data_loader(

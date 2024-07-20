@@ -40,6 +40,7 @@ class Configuration:
     charges: Optional[Charges] = None  # atomic unit
     cell: Optional[Cell] = None
     pbc: Optional[Pbc] = None
+    atomic_weights: Optional[np.ndarray] = None # ATOMIC WEIGHTS ARE ADDED HERE
 
     weight: float = 1.0  # weight of config in loss
     energy_weight: float = 1.0  # weight of config energy in loss
@@ -117,7 +118,7 @@ def config_from_atoms(
 
     energy = atoms.info.get(energy_key, None)  # eV
     forces = atoms.arrays.get(forces_key, None)  # eV / Ang
-    stress = atoms.info.get(stress_key, None)  # eV / Ang ^ 3
+    stress = atoms.info.get(stress_key, None)  # eV / Ang
     virials = atoms.info.get(virials_key, None)
     dipole = atoms.info.get(dipole_key, None)  # Debye
     # Charges default to 0 instead of None if not found
@@ -136,6 +137,7 @@ def config_from_atoms(
     stress_weight = atoms.info.get("config_stress_weight", 1.0)
     virials_weight = atoms.info.get("config_virials_weight", 1.0)
 
+    atomic_weights = atoms.info.get("atomic_weights", None)# ATOMIC WEIGHTS ARE ADDED HERE
     # fill in missing quantities but set their weight to 0.0
     if energy is None:
         energy = 0.0
@@ -149,9 +151,6 @@ def config_from_atoms(
     if virials is None:
         virials = np.zeros((3, 3))
         virials_weight = 0.0
-    if dipole is None:
-        dipole = np.zeros(3)
-        # dipoles_weight = 0.0
 
     return Configuration(
         atomic_numbers=atomic_numbers,
@@ -170,6 +169,7 @@ def config_from_atoms(
         config_type=config_type,
         pbc=pbc,
         cell=cell,
+        atomic_weights=atomic_weights,# ATOMIC WEIGHTS ARE ADDED HERE
     )
 
 

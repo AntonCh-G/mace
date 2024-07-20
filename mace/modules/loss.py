@@ -365,3 +365,25 @@ class WeightedEnergyForcesDipoleLoss(torch.nn.Module):
             f"{self.__class__.__name__}(energy_weight={self.energy_weight:.3f}, "
             f"forces_weight={self.forces_weight:.3f}, dipole_weight={self.dipole_weight:.3f})"
         )
+
+
+def atomic_weighted_mean_squared_error_forces(ref: Batch, pred: TensorDict) -> torch.Tensor:
+    # forces: [n_atoms, 3]
+    configs_weight = torch.repeat_interleave(
+        ref.weight, ref.ptr[1:] - ref.ptr[:-1]
+    ).unsqueeze(
+        -1
+    )  # [n_atoms, 1]
+    configs_forces_weight = torch.repeat_interleave(
+        ref.forces_weight, ref.ptr[1:] - ref.ptr[:-1]
+    ).unsqueeze(
+        -1
+    )  # [n_atoms, 1]
+
+    atomic_weights = ref.atomic_weights
+    loss = torch.mean(
+        configs_weight
+        * configs_forces_weight
+        * torch.square(atomic_weights * (ref["forces"] - pred["forces"]))
+    )  # []
+    return loss
